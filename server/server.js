@@ -1,7 +1,7 @@
 //creating the server
 //we did > yarn add socket.io
 const io = require('socket.io')(); //socket io object
-const { createGameState } = require('./game');
+const { createGameState, gameLoop } = require('./game');
 const {FRAME_RATE } = require('./constants');
 
 io.on('connection',client =>{
@@ -15,6 +15,12 @@ function startGameInterval(client, state){
         const winner = gameLoop(state);
         //if it returns 0 the game continues
         //if returns 1, the player has lost
+        if(!winner){
+            client.emit('gameState', JSON.stringify(state));
+        } else {
+            client.emit('gameOver');
+            clearInterval(intervalID);
+        }
     }, 1000/ FRAME_RATE);
 }
 
