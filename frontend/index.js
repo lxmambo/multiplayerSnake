@@ -2,29 +2,38 @@ const BG_COLOUR = '#231f20';
 const SNAKE_COLOUR = '#C2C2C2'
 const FOOD_COLOUR = '#e66916'
 
-//connecting to the server
+//connecting to the server. Here we tell where to connect to, what url
 const socket = io('http://localhost:3000');
+//we wanto to listen to the init event, because it was what
+//we defined in our server and we want to call the funciont
+//handleInit
 socket.on('init', handleInit); //we want to listen to the init event
 //and call a function called handleInit
-socket.on('gamestate',handleGameState);
+//next we want to listn to a new event, called 'gameState'
+//and call a function called handleGameState
+socket.on('gameState',handleGameState);
 
 const gameScreen = document.getElementById('gameScreen');
 let canvas, ctx;
 
+//initialization function
 function init(){
-    canvas = document.getElementById('canvas')
-    ctx = canvas.getContext('2d')
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d');
 
     canvas.width = canvas.height = 600;
     ctx.fillStyle= BG_COLOUR;
     ctx.fillRect(0,0,canvas.width,canvas.height)
 
+    //listening to a keydown event and 
     document.addEventListener('keydown', keydown);
 }
 
 //takes an event as argument
 function keydown(e){
-    console.log(e.keyCode);
+    //console.log(e.keyCode);
+    socket.emit('keydown',e.keyCode); //send to the server a 
+    //keydown event in this case, the event e.keyCode
 }
 
 init();
@@ -37,8 +46,11 @@ function paintGame(state){
     const gridsize = state.gridsize;
 
     //size is how many pixels represent a square in game space
+    //this is where we reconcile the coordinate system between
+    //pixels space and gamespace
     const size = canvas.width / gridsize;
 
+    //paint the food
     ctx.fillStyle = FOOD_COLOUR;
     ctx.fillRect(food.x * size, food.y * size, size, size)
 

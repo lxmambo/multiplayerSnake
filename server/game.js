@@ -55,10 +55,41 @@ function gameLoop(state) {
         randomFood();
     }
     //we need to make sure the snake didn't bump on itself
-    //and move all the squares of the object forwar
+    //and move all the squares of the object forward
     if(playerOne.vel.x || playerOne.vel.y){
         //<-we need to make sure the snake it's moving
         //let's make sure the snake is not bumping on itself
-
+        for(let cell of playerOne.snake){
+            if(cell.x === playerOne.pos.x && cell.y === playerOne.pox.y){
+                //this condition means that a cell of the snake body
+                //is bumping/overlapping on to it's head   
+                return 2;
+                //player 1 has lost, 2 has won
+            }
+        }
+        //if we are still in the game, we want to move the snake forward
+        //push a new value onto the array and shift off the other one of the end
+        //we end up with an array of same length but its all moved forward
+        playerOne.snake.push({...playerOne.pos});
+        //snake now it's one longer, we need to remove 1st item of the list
+        playerOne.snake.shift();
     }
+    return false; //if we reached so far, player is still in the game
+                  //because there is no winner
+}
+
+function randomFood(state){
+    food = {
+        x: Math.floor(Math.random()*GRID_SIZE),
+        y: Math.floor(Math.random()*GRID_SIZE),
+    }
+    //we don't want to place the food on the top of the snake
+    for(let cell of state.player.snake){
+        if(cell.x === food.x && cell.y === food.y){
+             return randomFood(state);
+             //recursely call randomFood until we get
+        }
+    }
+    state.food = food;
+    
 }
