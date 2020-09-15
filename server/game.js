@@ -1,8 +1,15 @@
 const { GRID_SIZE } = require('./constants');
 
 module.exports = {
-    createGameState,
+    initGame,
     gameLoop,
+    getUpdatedVelocity,
+}
+
+function initGame(){
+    const state = createGameState();
+    randomFood(state);
+    return state;
 }
 
 function createGameState() {
@@ -48,11 +55,11 @@ function gameLoop(state) {
     }
     //the player ate food? head on same position of head
     if(state.food.x === playerOne.pos.x && state.food.y === playerOne.pos.y){
-        player.One.snake.push({...playerOne.pos}); //snake array gets a new object, gets bigger
+        playerOne.snake.push({...playerOne.pos}); //snake array gets a new object, gets bigger
         playerOne.pos.x +=playerOne.vel.x;
         playerOne.pos.y += playerOne.vel.y;
         //place new food in the grid
-        randomFood();
+        randomFood(state);
     }
     //we need to make sure the snake didn't bump on itself
     //and move all the squares of the object forward
@@ -60,7 +67,7 @@ function gameLoop(state) {
         //<-we need to make sure the snake it's moving
         //let's make sure the snake is not bumping on itself
         for(let cell of playerOne.snake){
-            if(cell.x === playerOne.pos.x && cell.y === playerOne.pox.y){
+            if(cell.x === playerOne.pos.x && cell.y === playerOne.pos.y){
                 //this condition means that a cell of the snake body
                 //is bumping/overlapping on to it's head   
                 return 2;
@@ -92,4 +99,21 @@ function randomFood(state){
     }
     state.food = food;
     
+}
+
+function getUpdatedVelocity(keyCode){
+    switch(keyCode){
+        case 37: { //represents the left key
+            return {x:-1,y:0};
+        }
+        case 38: { //represents the down key
+            return {x:0,y:-1};
+        }
+        case 39: { //represents the right key
+            return {x:1,y:0};
+        }
+        case 40: { //represents the up key
+            return {x:0,y:1};
+        }
+    }
 }

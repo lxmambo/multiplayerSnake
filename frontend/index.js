@@ -13,11 +13,40 @@ socket.on('init', handleInit); //we want to listen to the init event
 //and call a function called handleGameState
 socket.on('gameState',handleGameState);
 
+socket.on('gameOver', handleGameOver);
+socket.on('gameCode', handleGameCode);
+
 const gameScreen = document.getElementById('gameScreen');
+const initialScreen = document.getElementById('initialScreen');
+const newGameBtn = document.getElementById('newGameButton');
+const joinGameBtn = document.getElementById('joinGameBtn');
+const gameCodeInput = document.getElementById('gameCodeInput');
+const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+
+newGameBtn.addEventListener('click', newGame);
+joinGameBtn.addEventListener('click',joinGame);
+
+function newGame(){
+    socket.emit('newGame');
+    init();
+}
+
+function joinGame(){
+    const code = gameCodeInput.nodeValue;
+    socket.emit('joinGame', code); //we don't need to stringify
+                                   //code because it's already
+                                   //a string coming out of the
+                                   //input
+    init();
+}
+
 let canvas, ctx;
+let playerNumber;
 
 //initialization function
 function init(){
+    initialScreen.style.display = "none";
+    gameScreen.style.display = "block";
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
@@ -35,8 +64,6 @@ function keydown(e){
     socket.emit('keydown',e.keyCode); //send to the server a 
     //keydown event in this case, the event e.keyCode
 }
-
-init();
 
 function paintGame(state){
     ctx.fillStyle = BG_COLOUR;
@@ -70,8 +97,8 @@ function paintPlayer(playerState, size, colour){
 //we have to take the state out of the frontend put it on the backend and then
 //update the state for every frame of the game
 
-function handleInit(msg){
-    console.log(msg);
+function handleInit(number){
+    playerNumber = number;
 }
 
 function handleGameState(gameState){
@@ -89,3 +116,11 @@ function handleGameState(gameState){
 
 //the paintgame function must be called anytime the server sends a new
 //updated gamestate
+
+function handleGameOver(){
+    alert("You lose!");
+}
+
+function handleGameCode(gameCode){
+    gameCodeDisplay.innerText = gameCode;
+}
