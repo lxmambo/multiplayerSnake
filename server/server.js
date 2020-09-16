@@ -1,8 +1,9 @@
 //creating the server
 //we did > yarn add socket.io
 const io = require('socket.io')(); //socket io object
-const { createGameState, gameLoop, getUpdatedVelocity } = require('./game');
+const { initGame, gameLoop, getUpdatedVelocity } = require('./game');
 const {FRAME_RATE } = require('./constants');
+const { makeid } = require('./utils');
 
 const state = {};
 const clientRooms = {}; //lookup table it's gonna map an id 
@@ -18,38 +19,39 @@ io.on('connection',client =>{
     //so we can have access to the client. If the function
     //Was defined in another part it would not be possible
     client.on('keydown',handleKeyDown);
-
-    client.on('keydown',handleNewGame);
-
+    client.on('newGame',handleNewGame);
     client.on('joinGame', handleJoinGame);
 
-    function handleJoinGame(){
+    function handleJoinGame(roomName){
         //to join the game, the game must exist and have 
         //another player waiting for you
-        const room = io.sockets.adapter.rooms[gameCode];
+        const room = io.sockets.adapter.rooms[roomName];
         let allUsers;
+        
         if(room){
             allUsers = room.sockets;
         }
+
         let numClients = 0;
         if(allUsers){
             //grab an array of allusers and get the length
             numClients = Object.keys(allUsers).length;
         }
+
         if(numClients=== 0){
-            client.emit('unknowGame');
+            client.emit('unknownCode');
+            return;
         } else if(numClients>1){
             client.emit('tooManyPlayers');
             return;
         }
-        clientRooms[client.id] = gameCode;
-        client.join(gameCode);
+
+        clientRooms[client.id] = roomName;
+        client.join(roomName);
         client.number = 2;
         client.emit('init',2);
 
-        startGameInterval(gameCode){
-
-        }
+        startGameInterval(roomName);
     }
 
     function handleNewGame(){
@@ -61,7 +63,7 @@ io.on('connection',client =>{
         //to player connect to the same room -> start a new game
         //send information back to players
         let roomName = makeid(5); //5 charathers id
-        clientsRooms[client.id] = roomName;
+        clientRooms[client.id] = roomName;
         client.emit('gameCode',roomName); //send roomName as the data
 
         state[roomName] = initGame(); //<-creates a state as soon
@@ -76,6 +78,12 @@ io.on('connection',client =>{
     //socket.io information and we json parse the objects
     //because we are going to receive ints as string->
     function handleKeyDown(keyCode){
+        const roomName = clientRooms[client.id];
+
+        if(!roomName){
+            return;
+        }
+
         try {
             keyCode = parseInt(keyCode);
         } catch(e) {
@@ -86,10 +94,10 @@ io.on('connection',client =>{
         //function that translates keycodes in
         //velocity
         const vel = getUpdatedVelocity(keyCode);
-        if(vel){
-            state.player.vel = vel;
-        }
 
+        if(vel){
+            state[roomName].players[client.number - 1].vel = vel;
+        }
     }
 });
 
@@ -103,6 +111,7 @@ function startGameInterval(roomName){
         //if it returns 0 the game continues
         //if returns 1, the player has lost
         console.log('interval');
+
         if(!winner){
             emitGameState(roomName,state[roomName]);
         } else {
@@ -116,16 +125,16 @@ function startGameInterval(roomName){
 }
 
 
-function emitGameState(roomName, state){
-    io.sockets.in(roomName)
-        .emit('gameState', JSON.stringify(state));
+function emitGameState(room, gameState){
+    io.sockets.in(room)
+        .emit('gameState', JSON.stringify(gameState));
         //with this line we are sending a message to an 
         //arbitrary number of clients
 
 }
 
-function emitGameOver(roomName, winner){
-    io.sockets.in(roomName)
+function emitGameOver(room, winner){
+    io.sockets.in(room)
         .emit('gameOver',JSON.stringify({winner}));
 }
 

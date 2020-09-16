@@ -12,14 +12,14 @@ socket.on('init', handleInit); //we want to listen to the init event
 //next we want to listn to a new event, called 'gameState'
 //and call a function called handleGameState
 socket.on('gameState',handleGameState);
-
 socket.on('gameOver', handleGameOver);
 socket.on('gameCode', handleGameCode);
+socket.on('tooManyPlayer', handleTooManyPlayers);
 
 const gameScreen = document.getElementById('gameScreen');
 const initialScreen = document.getElementById('initialScreen');
 const newGameBtn = document.getElementById('newGameButton');
-const joinGameBtn = document.getElementById('joinGameBtn');
+const joinGameBtn = document.getElementById('joinGameButton');
 const gameCodeInput = document.getElementById('gameCodeInput');
 const gameCodeDisplay = document.getElementById('gameCodeDisplay');
 
@@ -32,7 +32,7 @@ function newGame(){
 }
 
 function joinGame(){
-    const code = gameCodeInput.nodeValue;
+    const code = gameCodeInput.value;
     socket.emit('joinGame', code); //we don't need to stringify
                                    //code because it's already
                                    //a string coming out of the
@@ -42,11 +42,13 @@ function joinGame(){
 
 let canvas, ctx;
 let playerNumber;
+let gameActive = false;
 
 //initialization function
 function init(){
     initialScreen.style.display = "none";
     gameScreen.style.display = "block";
+
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
@@ -56,6 +58,7 @@ function init(){
 
     //listening to a keydown event and 
     document.addEventListener('keydown', keydown);
+    gameActive = true;
 }
 
 //takes an event as argument
@@ -81,7 +84,8 @@ function paintGame(state){
     ctx.fillStyle = FOOD_COLOUR;
     ctx.fillRect(food.x * size, food.y * size, size, size)
 
-    paintPlayer(state.player, size, SNAKE_COLOUR);
+    paintPlayer(state.players[0], size, SNAKE_COLOUR);
+    paintPlayer(state.players[1], size, 'red');
 }
 
 function paintPlayer(playerState, size, colour){
@@ -102,6 +106,9 @@ function handleInit(number){
 }
 
 function handleGameState(gameState){
+    if(!gameActive){
+        return;
+    }
     //gameState comes as a string, server sends Json as a string, and 
     //we want it as a JS object
     gameState = JSON.parse(gameState);
@@ -117,10 +124,37 @@ function handleGameState(gameState){
 //the paintgame function must be called anytime the server sends a new
 //updated gamestate
 
-function handleGameOver(){
-    alert("You lose!");
+function handleGameOver(data){
+    if(!gameActive){
+        return;
+    }
+    data = JSON.parse(data);
+    gameActive = false;
+    
+    if(data.winner === playerNumber){
+        alert("you win!");
+    } else {
+        alert("you loose.");
+    }
 }
 
 function handleGameCode(gameCode){
     gameCodeDisplay.innerText = gameCode;
+}
+
+function handleUnknownGame(){
+    reset();
+    alert("unknown game code");
+}
+
+function handleTooManyPlayers(){
+    reset();
+    alert('this game is already in progress');
+}
+
+function reset(){
+    playerNumber = null;
+    gameCodeInput.value ='';
+    initialScreen.style.display = "block";
+    gameScreen.style.display = "none"; 
 }
